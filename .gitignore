@@ -1,0 +1,7 @@
+# Directories
+.idea/
+venv/
+
+# Files
+./DS_Store
+

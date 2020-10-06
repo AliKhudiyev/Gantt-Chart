@@ -1,5 +1,5 @@
 class Step:
-    def __init__(self, name, start, end, duration, members):
+    def __init__(self, name='', start='', end='', duration=0, members=[]):
         self.name = name
         self.start = start
         self.end = end

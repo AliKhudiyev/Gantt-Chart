@@ -4,4 +4,4 @@ venv/
 
 # Files
 .DS_Store
-
+*.json

@@ -1,8 +1,6 @@
 from tkinter import *
 import datetime
-import time
 from project import *
-from calendar import *
 import json
 
 
@@ -39,23 +37,12 @@ class Application:
         self.win_add_project = None
         self.win_remove_project = None
         self.win_save = None
+        self.win_open = None
         self.as_new = True
         self.week = 1
         self.calendar_start = datetime.datetime.strptime('01.10.2020', '%d.%m.%Y')
         self.calendar_span_weeks = 4
         self.n_row = 0
-
-        step = Step('first step', '16.01.1999', '30.01.1999', 9, ['Ali', 'Joe'])
-        step2 = Step('second step', '16.01.1999', '21.01.1999', 7, ['Vito'])
-        step3 = Step('third step', '01.10.2020', '06.10.2020', 1, ['Carlo', 'John'])
-        prj = Project('Example', [step, step2, step3])
-
-        step = Step('first step', '06.10.2020', '18.10.2020', 9, ['Ali', 'Joe'])
-        step2 = Step('second step', '05.10.2020', '25.10.2020', 7, ['Vito'])
-        prj2 = Project('Example 2', [step, step2])
-
-        self.projects.append(prj)
-        self.projects.append(prj2)
 
     def refresh_project(self):
         clear_window(self.frame_project)
@@ -123,7 +110,7 @@ class Application:
         total_row = len(self.projects)
         for project in self.projects:
             total_row += len(project.steps)
-        print('total row:', total_row)
+        # print('total row:', total_row)
 
         for i in range(28):
             for j in range(total_row):
@@ -148,10 +135,31 @@ class Application:
         if n >= 0:
             self.canvas_calendar.create_line(22*n, 0, 22*n, 625, fill='green', width=2)
 
-    def click_open(self):
+    def click_open(self, file_path):
         self.as_new = False
+        self.file_path = file_path
+        self.root.geometry('1450x500')
+
+        json_string = ''
+        with open(file_path+'.json', 'r') as f:
+            json_string = json.load(f)
+        f.close()
+
+        for project in json_string['projects']:
+            prj = Project('', [])
+            prj.name = project['title']
+            for step in project['steps']:
+                s = Step()
+                s.name = step['name']
+                s.start = step['start']
+                s.end = step['end']
+                for member in step['members']:
+                    s.members.append(member)
+                prj.steps.append(s)
+            self.projects.append(prj)
+
+        self.win_open.destroy()
         clear_window(self.root)
-        self.root.geometry('400x400')
         self.gui_chart()
 
     def click_new(self):
@@ -189,8 +197,13 @@ class Application:
         exit_window(self.win_add_project)
         self.refresh_project()
 
-    def click_save_chart(self):
-        pass
+    def click_save_chart(self, file_path):
+        with open(file_path+'.json', 'w') as f:
+            json.dump(projects_to_json(self.projects), f)
+        f.close()
+        if self.win_save is not None:
+            self.win_save.destroy()
+        self.gui_chart()
 
     def click_slide_left(self):
         self.calendar_start -= datetime.timedelta(days=7)
@@ -213,7 +226,7 @@ class Application:
     def gui_welcome(self):
         label_welcome = Label(self.root, text='Gantt Chart')
         button_new = Button(self.root, text='New chart', command=self.click_new)
-        button_open = Button(self.root, text='Open chart', command=self.click_open)
+        button_open = Button(self.root, text='Open chart', command=self.gui_open_chart)
 
         label_welcome.grid()
         button_new.grid()
@@ -320,10 +333,29 @@ class Application:
         button_remove.grid(row=1, column=0)
 
     def gui_save_chart(self):
-        if self.as_new:
-            self.click_save_chart()
+        if not self.as_new:
+            self.click_save_chart(self.file_path)
         else:
             self.win_save = Toplevel(self.root)
+
+            label_name = Label(self.win_save, text='File name')
+            entry_name = Entry(self.win_save)
+            button_save = Button(self.win_save, text='Save', command=lambda: self.click_save_chart(entry_name.get()))
+
+            label_name.grid(row=0, column=0)
+            entry_name.grid(row=0, column=1)
+            button_save.grid(row=1, column=0, columnspan=2)
+
+    def gui_open_chart(self):
+        self.win_open = Toplevel(self.root)
+
+        label_name = Label(self.win_open, text='File name')
+        entry_name = Entry(self.win_open)
+        button_open = Button(self.win_open, text='Open', command=lambda: self.click_open(entry_name.get()))
+
+        label_name.grid(row=0, column=0)
+        entry_name.grid(row=0, column=1)
+        button_open.grid(row=1, column=0, columnspan=2)
 
     def run(self):
         self.gui_welcome()

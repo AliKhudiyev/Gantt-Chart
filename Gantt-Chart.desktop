@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Gantt-Chart-Software
+Comment=V1.0
+Exec=~/Desktop/Projects/Gantt-Chart.sh
+Terminal=false
+Type=Application

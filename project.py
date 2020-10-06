@@ -17,6 +17,11 @@ class Step:
                 members += ', '
         return members
 
+    def is_valid(self):
+        if len(self.name) == 0 or len(self.start) == 0 or len(self.end) == 0 or len(self.members) == 0:
+            return False
+        return True
+
     def to_json(self):
         string = '{"name":"' + self.name + '","start":"' + self.start + '","end":"' + self.end + '",'
         string += '"members":['
@@ -34,6 +39,14 @@ class Project:
     def __init__(self, name='', steps=[]):
         self.name = name
         self.steps = steps
+
+    def is_valid(self):
+        if len(self.name) == 0 or len(self.steps) == 0:
+            return False
+        for step in self.steps:
+            if not step.is_valid():
+                return False
+        return True
 
     def to_json(self):
         string = '{"title":"' + self.name + '","steps":['

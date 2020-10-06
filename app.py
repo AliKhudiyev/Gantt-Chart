@@ -1,7 +1,7 @@
 from tkinter import *
 import datetime
+import numpy as np
 from project import *
-import json
 
 
 def clear_window(window):
@@ -25,11 +25,12 @@ class Application:
         self.root = Tk()
         self.root.geometry("200x200+30+30")
         self.root.title('Gantt Chart')
+        self.root.iconbitmap('graph.ico')
         self.frame_template = LabelFrame(self.root, width=800, height=450)
-        self.frame_project = LabelFrame(self.frame_template)
+        self.frame_project = LabelFrame(self.frame_template, width=790, height=420)
         self.frame_calendar = LabelFrame(self.root, width=620, height=450)
         self.frame_buttons = LabelFrame(self.root)
-        self.canvas_calendar = Canvas(self.frame_calendar, width=620, height=450)
+        self.canvas_calendar = Canvas(self.frame_calendar, width=610, height=440)
 
         self.projects = []
         self.file_path = ''
@@ -47,7 +48,7 @@ class Application:
     def refresh_project(self):
         clear_window(self.frame_project)
         self.frame_project.grid(row=1, column=1, columnspan=7)
-        # self.frame_project.grid_propagate(0)
+        self.frame_project.grid_propagate(0)
         n_row = 0
         for i, project in enumerate(self.projects):
             if i < self.n_row:
@@ -66,7 +67,7 @@ class Application:
                                  datetime.datetime.strptime(step.start, '%d.%m.%Y')).days
                 dt = (datetime.datetime.now() - datetime.datetime.strptime(step.start, '%d.%m.%Y')).days
                 if 0 <= dt < step.duration:
-                    completion = 100 * dt/step.duration
+                    completion = np.round(100 * dt/step.duration, decimals=1)
                 elif dt >= step.duration:
                     completion = 100
                 label_step = Label(self.frame_project, text=step.name, width=15)
@@ -87,25 +88,22 @@ class Application:
         self.refresh_calendar()
 
     def refresh_calendar(self):
-        # TO DO
-        # clear_window(self.frame_calendar)
         self.canvas_calendar.delete('all')
         self.frame_calendar.grid(row=1, column=2)
-        # self.canvas_calendar.grid_propagate(0)
         self.canvas_calendar.grid(row=0, column=0)
-        self.canvas_calendar.create_line(0, 2, 620, 2, fill='purple')
-        self.canvas_calendar.create_line(0, 35, 620, 35)
+        self.frame_calendar.grid_propagate(0)
+        self.canvas_calendar.create_line(0, 30, 620, 30)
 
         for i in range(4):
-            self.canvas_calendar.create_text(154*i+75, 10, text='Week'+str(self.week+i))
-            self.canvas_calendar.create_text(154*i+10, 25, text='M')
-            self.canvas_calendar.create_text(154*i+32, 25, text='T')
-            self.canvas_calendar.create_text(154*i+54, 25, text='W')
-            self.canvas_calendar.create_text(154*i+76, 25, text='Th')
-            self.canvas_calendar.create_text(154*i+98, 25, text='F')
-            self.canvas_calendar.create_text(154*i+120, 25, text='St')
-            self.canvas_calendar.create_text(154*i+142, 25, text='S')
-            self.canvas_calendar.create_line(154*i+155, 0, 154*i+155, 194)
+            # self.canvas_calendar.create_text(154*i+75, 8, text='Week '+str(self.week+i))
+            self.canvas_calendar.create_text(154*i+10, 15, text='M')
+            self.canvas_calendar.create_text(154*i+32, 15, text='T')
+            self.canvas_calendar.create_text(154*i+54, 15, text='W')
+            self.canvas_calendar.create_text(154*i+76, 15, text='Th')
+            self.canvas_calendar.create_text(154*i+98, 15, text='F')
+            self.canvas_calendar.create_text(154*i+120, 15, text='St')
+            self.canvas_calendar.create_text(154*i+142, 15, text='S')
+            self.canvas_calendar.create_line(154*i+154, 0, 154*i+154, 620)
 
         total_row = len(self.projects)
         for project in self.projects:
@@ -114,7 +112,7 @@ class Application:
 
         for i in range(28):
             for j in range(total_row):
-                self.canvas_calendar.create_rectangle(22*i, 40+22*j, 22+22*i, 62+22*j, fill='orange')
+                self.canvas_calendar.create_rectangle(22*i, 30+22*j, 22+22*i, 52+22*j, fill='orange')
 
         n_row = 0
         for n, project in enumerate(self.projects):
@@ -129,7 +127,7 @@ class Application:
                     y = n_row
                     if x < 0:
                         continue
-                    self.canvas_calendar.create_rectangle(22*x+5, 40+22*y+5, 22*x+22-3, 62+22*y-3, fill='blue')
+                    self.canvas_calendar.create_rectangle(22*x+3, 30+22*y+3, 22*x+22-3, 52+22*y-3, fill='blue')
                 n_row += 1
         n = (datetime.datetime.now() - self.calendar_start).days
         if n >= 0:
@@ -149,7 +147,7 @@ class Application:
             prj = Project('', [])
             prj.name = project['title']
             for step in project['steps']:
-                s = Step()
+                s = Step(members=[])
                 s.name = step['name']
                 s.start = step['start']
                 s.end = step['end']
@@ -174,7 +172,7 @@ class Application:
         step.start = start_entry.get()
         step.end = end_entry.get()
         step.duration = duration_entry.get()
-        step.members = members_entry.get()
+        step.members = [members_entry.get()]
 
         name_entry.delete(0, END)
         start_entry.delete(0, END)
@@ -193,6 +191,8 @@ class Application:
 
     def click_save_project(self, title_entry):
         self.projects[-1].name = title_entry.get()
+        if not self.projects[-1].is_valid():
+            self.projects.remove(self.projects[-1])
         # print('saving project...', self.projects[-1].name)
         exit_window(self.win_add_project)
         self.refresh_project()
@@ -224,17 +224,16 @@ class Application:
         self.refresh_project()
 
     def gui_welcome(self):
-        label_welcome = Label(self.root, text='Gantt Chart')
+        label_welcome = Label(self.root, text='Version 1.0')
         button_new = Button(self.root, text='New chart', command=self.click_new)
         button_open = Button(self.root, text='Open chart', command=self.gui_open_chart)
 
-        label_welcome.grid()
-        button_new.grid()
+        label_welcome.grid(padx=60, pady=10)
+        button_new.grid(pady=10)
         button_open.grid()
 
     def gui_chart(self):
-        # TO DO: template
-        self.frame_buttons.grid(row=0, column=0)
+        self.frame_buttons.grid(row=0, column=0, columnspan=2)
 
         button_add_project = Button(self.frame_buttons, text='+', command=self.gui_add_project)
         button_remove_project = Button(self.frame_buttons, text='-', command=self.gui_remove_project)
@@ -272,7 +271,6 @@ class Application:
         button_slide_down.grid(row=1, column=0, sticky=N)
 
         self.refresh_project()
-        # self.refresh_calendar()
 
     def gui_add_project(self):
         self.win_add_project = Toplevel(self.root)
@@ -318,7 +316,7 @@ class Application:
         entry_members.grid(row=6, column=1)
 
         button_add.grid(row=2, column=1)
-        button_save.grid(row=7, column=0)
+        button_save.grid(row=7, column=0, columnspan=4)
 
     def gui_remove_project(self):
         self.win_remove_project = Toplevel(self.root)
@@ -330,7 +328,7 @@ class Application:
 
         label_index.grid(row=0, column=0)
         entry_index.grid(row=0, column=1)
-        button_remove.grid(row=1, column=0)
+        button_remove.grid(row=1, column=0, columnspan=2)
 
     def gui_save_chart(self):
         if not self.as_new:

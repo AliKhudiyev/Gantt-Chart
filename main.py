@@ -106,8 +106,8 @@ class ProjectFrame(LabelFrame):
         self.file_path = ''
         self.start_index = 0
 
-        self.button_up = None
-        self.button_down = None
+        self.button_up = Button(self.sliderFrame, text='U', command=self.click_up)
+        self.button_down = Button(self.sliderFrame, text='D', command=self.click_down)
         self.gui_template()
 
     def load_file(self, file_path):
@@ -141,18 +141,13 @@ class ProjectFrame(LabelFrame):
         if self.start_index > 0:
             self.start_index -= 1
         # self.app.update()
-        clear_frame(self.mainFrame)
-        clear_frame(self.app.calendarFrame)
         self.app.projectFrame.update()
         self.app.calendarFrame.update(4, self.projects[self.start_index:])
 
     def click_down(self):
-        print(self.start_index, len(self.projects))
         if self.start_index + 1 < len(self.projects):
             self.start_index += 1
         # self.app.update()
-        clear_frame(self.mainFrame)
-        clear_frame(self.app.calendarFrame)
         self.app.projectFrame.update()
         self.app.calendarFrame.update(4, self.projects[self.start_index:])
 
@@ -163,8 +158,6 @@ class ProjectFrame(LabelFrame):
         self.header.grid(row=0, column=0)
         self.body.grid(row=1, column=0)
 
-        self.button_up = Button(self.sliderFrame, text='U', command=self.click_up)
-        self.button_down = Button(self.sliderFrame, text='D', command=self.click_down)
         self.button_up.place(x=20, anchor='n')
         self.button_down.place(rely=0.9, y=25)
 
@@ -172,12 +165,12 @@ class ProjectFrame(LabelFrame):
         self.mainFrame.grid_propagate(0)
         self.sliderFrame.grid_propagate(0)
 
-        label_projects = Label(self.header, text='Projects', bg='cyan', width=15)
-        label_start = Label(self.header, text='From', bg='cyan', width=10)
-        label_end = Label(self.header, text='To', bg='cyan', width=10)
-        label_duration = Label(self.header, text='Duration', bg='cyan', width=10)
-        label_members = Label(self.header, text='Member(s)', bg='cyan', width=10)
-        label_completion = Label(self.header, text='Completed', bg='cyan', width=10)
+        label_projects = Label(self.header, text='Projects', bg='cyan', width=15, height=3)
+        label_start = Label(self.header, text='From', bg='cyan', width=10, height=3)
+        label_end = Label(self.header, text='To', bg='cyan', width=10, height=3)
+        label_duration = Label(self.header, text='Duration', bg='cyan', width=10, height=3)
+        label_members = Label(self.header, text='Member(s)', bg='cyan', width=10, height=3)
+        label_completion = Label(self.header, text='Completed', bg='cyan', width=10, height=3)
 
         label_projects.grid(row=0, column=0, padx=1)
         label_start.grid(row=0, column=1, padx=1)
@@ -192,6 +185,7 @@ class ProjectFrame(LabelFrame):
             self.update()
 
     def update(self):
+        clear_frame(self.mainFrame)
         self.gui_template()
 
         n_row = 0
@@ -233,13 +227,31 @@ class CalendarFrame(LabelFrame):
     def __init__(self, master, app, width, height):
         LabelFrame.__init__(self, master, width=width, height=height)
         self.app = app
-        self.header = LabelFrame(self)
-        self.body = LabelFrame(self)
+        self.mainFrame = LabelFrame(self)
+        self.sliderFrame = LabelFrame(self, width=width, height=35)
+
+        self.header = LabelFrame(self.mainFrame)
+        self.body = LabelFrame(self.mainFrame)
+
+        self.button_left = Button(self.sliderFrame, text='<', command=self.click_left)
+        self.button_right = Button(self.sliderFrame, text='>', command=self.click_right)
 
         self.week_pad = 1
         self.n_week = 4
         self.calendar_start = datetime.datetime.now()
         self.weekdays = ['M', 'T', 'W', 'Th', 'F', 'St', 'S']
+
+        self.sliderFrame.grid(row=0, column=0)
+        self.mainFrame.grid(row=1, column=0)
+        self.sliderFrame.grid_propagate(0)
+
+    def click_left(self):
+        self.calendar_start -= datetime.timedelta(7)
+        self.update(self.n_week, self.app.projectFrame.projects[self.app.projectFrame.start_index:], self.calendar_start)
+
+    def click_right(self):
+        self.calendar_start += datetime.timedelta(7)
+        self.update(self.n_week, self.app.projectFrame.projects[self.app.projectFrame.start_index:], self.calendar_start)
 
     def date_index(self, date):
         dt = (date - self.calendar_start).days
@@ -272,13 +284,22 @@ class CalendarFrame(LabelFrame):
         self.calendar_start -= datetime.timedelta(self.calendar_start.weekday())
         print('Calendar starts in', self.calendar_start)
 
-    def update(self, n_week=1, projects=[]):
+    def update(self, n_week=1, projects=[], start_date=None):
+        clear_frame(self.header)
+        # clear_frame(self.body)
+        self.body.destroy()
+        self.body = LabelFrame(self.mainFrame)
+
+        self.button_left.place(x=10)
+        self.button_right.place(relx=0.9)
+
         self.n_week = n_week
         self.header.grid(row=0, column=0)
         self.body.grid(row=1, column=0)
         self.grid_propagate(0)
 
-        self.update_calendar_start(projects)
+        if start_date is None:
+            self.update_calendar_start(projects)
 
         for i in range(n_week):
             for j in range(7):
@@ -612,9 +633,6 @@ class App:
         # ================
 
     def update(self):
-        clear_frame(self.projectFrame)
-        clear_frame(self.calendarFrame)
-
         self.frame.grid(row=0, column=0)
         self.projectFrame.grid(row=0, column=0)
         self.calendarFrame.grid(row=0, column=1)

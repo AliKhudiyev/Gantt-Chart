@@ -11,8 +11,9 @@ class CalendarFrame(LabelFrame):
         self.header = LabelFrame(self.mainFrame)
         self.body = Canvas(self.mainFrame, width=560, height=470)
 
-        self.button_left = Button(self.sliderFrame, text='<', command=self.click_left)
-        self.button_right = Button(self.sliderFrame, text='>', command=self.click_right)
+        self.button_left = Button(self.sliderFrame, text=u'\u2190', command=self.click_left)
+        self.button_right = Button(self.sliderFrame, text=u'\u2192', command=self.click_right)
+        self.label_date = Label(self.sliderFrame, text='?', width=10, bg='orange')
 
         self.week_pad = 1
         self.n_week = 4
@@ -29,8 +30,24 @@ class CalendarFrame(LabelFrame):
         self.x_offset = 3
         self.y_offset = 0
         self.week_pad_pixels = 15
+        self.show_completion = False
+        self.display_dates = False
 
-        # self.gui_template()
+    def tell_position(self, x_pos, y_pos):
+        week_index = np.floor((x_pos - self.x_offset) / (7 * self.w + self.week_pad_pixels))
+        x = np.floor((x_pos - self.x_offset - self.week_pad_pixels * week_index) / self.w)
+        y = np.floor((y_pos - self.y_offset) / self.h)
+
+        return int(x), int(y)
+
+    def on_click(self, event):
+        x, y = self.tell_position(event.x, event.y)
+        # print(x, y)
+        text = ''
+        if x >= 0 and y >= 0:
+            time = self.calendar_start + datetime.timedelta(x)
+            text = time.strftime('%d/%m/%Y')
+        self.label_date.configure(text=text)
 
     def click_left(self):
         self.calendar_start -= datetime.timedelta(7)
@@ -59,36 +76,52 @@ class CalendarFrame(LabelFrame):
 
     def mark_date(self, row_index, date, color, span=1):
         for i in range(span):
-            if row_index > 17 or self.date_index(date)+i > 27+3:
+            if row_index > 17 or self.date_index(date) + i > 27 + 3:
                 continue
             label = Label(self.body, width=1, bg=color)
-            label.grid(row=row_index, column=self.date_index(date)+i)
+            label.grid(row=row_index, column=self.date_index(date) + i)
 
             self.marked_dates.append(label)
 
-    def mark_date_cell(self, row_index, date, color, span=1):
+    def mark_date_cell(self, row_index, date, color, span=1, show_completion=False):
         w = self.w
         h = self.h
         x_offset = self.x_offset
-        offset = (date-self.calendar_start).days
-        x_pad = ((offset+1) // 8) * self.week_pad_pixels
+        offset = (date - self.calendar_start).days
+        x_pad = (offset // 7) * self.week_pad_pixels
         begin = 0
+        now = datetime.datetime.now()
+        now = datetime.datetime(year=now.year, month=now.month, day=now.day)
+
         if offset < 0:
             x_pad = 0
             begin = -offset
+
         for i in range(begin, span):
-            if offset+i > 27+3 or row_index > 17:
+            current_date = date + datetime.timedelta(i)
+            if offset + i > 27 + 3 or row_index > 17:
                 break
-            if i > begin and (date+datetime.timedelta(i)).weekday() == 0:
+            if i > begin and current_date.weekday() == 0:
                 x_pad += self.week_pad_pixels
-            self.body.create_rectangle(w*(offset+i)+x_offset+x_pad, h*row_index,
-                                       w*(offset+i+1)+x_offset+x_pad, h*(row_index+1),
+
+            self.body.create_rectangle(w * (offset + i) + x_offset + x_pad, h * row_index,
+                                       w * (offset + i + 1) + x_offset + x_pad, h * (row_index + 1),
                                        fill=color)
+
+            if show_completion and now > current_date:
+                self.body.create_rectangle(w * (offset + i) + x_offset + x_pad + 5, h * row_index + 5,
+                                           w * (offset + i + 1) + x_offset + x_pad - 5, h * (row_index + 1) - 5,
+                                           fill='green')
+            elif show_completion and now == current_date:
+                self.body.create_oval(w * (offset + i) + x_offset + x_pad + 5, h * row_index + 8,
+                                      w * (offset + i + 1) + x_offset + x_pad - 5, h * (row_index + 1) - 8,
+                                      fill='cyan')
 
     def display_date(self):
         now = datetime.datetime.now()
         n = self.date_index(now)
-        if 0 <= n <= 27+3:
+
+        if 0 <= n <= 27 + 3:
             label = Label(self.header, text=self.weekdays[now.weekday()], bg='red')
             label.grid(row=0, column=n)
 
@@ -104,6 +137,9 @@ class CalendarFrame(LabelFrame):
         # print('Calendar starts in', self.calendar_start)
 
     def gui_template(self, n_week=4):
+        if self.display_dates:
+            self.label_date.place(relx=0.1, y=5)
+
         for i in range(n_week):
             for j in range(7):
                 label = Label(self.header, text=self.weekdays[j], width=1)
@@ -115,26 +151,22 @@ class CalendarFrame(LabelFrame):
         h = self.h
         x_offset = self.x_offset
         y_offset = self.y_offset
+
         for r in range(18):
             x_pad = 0
             for i in range(n_week):
-                # print('rendering week', i)
                 for j in range(7):
                     if j == 0 and i != 0:
                         x_pad += self.week_pad_pixels
-                    # self.body.create_text(w*(7*i+j)+10+offset, h*r+10, text='?')
-                    self.body.create_rectangle(w*(7*i+j)+x_offset+x_pad, h*r+y_offset,
-                                               w*(7*i+j+1)+x_offset+x_pad, h*(r+1)+y_offset,
+
+                    self.body.create_rectangle(w * (7 * i + j) + x_offset + x_pad, h * r + y_offset,
+                                               w * (7 * i + j + 1) + x_offset + x_pad, h * (r + 1) + y_offset,
                                                fill='orange')
-                #     label = Label(self.body, width=1, bg='orange')
-                #     label.grid(row=r, column=8*i+j, padx=2, pady=2)
-                # label = Label(self.body, width=self.week_pad)
-                # label.grid(row=r, column=8 * (i + 1) - 1, padx=2, pady=2)
 
     def update(self, n_week=1, projects=[], start_date=None):
         self.body.destroy()
         self.body = Canvas(self.mainFrame, width=560, height=470)
-        # self.body.grid_propagate(0)
+        self.body.bind('<Button-1>', self.on_click)
 
         self.button_left.place(x=10)
         self.button_right.place(relx=0.9)
@@ -143,7 +175,6 @@ class CalendarFrame(LabelFrame):
         self.header.grid(row=0, column=0)
         self.body.grid(row=1, column=0)
         self.grid_propagate(0)
-        # print('updating...')
 
         self.gui_template()
 
@@ -153,10 +184,10 @@ class CalendarFrame(LabelFrame):
         n_row = 0
         for project in projects:
             dt = (project.end - project.start).days
-            self.mark_date_cell(n_row, project.start, 'purple', dt)
+            self.mark_date_cell(n_row, project.start, 'purple', dt, self.show_completion)
             for step in project.steps:
                 dt = (step.end - step.start).days
-                self.mark_date_cell(n_row+1, step.start, 'blue', dt)
+                self.mark_date_cell(n_row + 1, step.start, 'blue', dt, self.show_completion)
                 n_row += 1
             n_row += 1
             if n_row > 17:

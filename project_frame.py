@@ -32,8 +32,8 @@ class ProjectFrame(LabelFrame):
         self.file_path = ''
         self.start_index = 0
 
-        self.button_up = Button(self.sliderFrame, text='U', command=self.click_up)
-        self.button_down = Button(self.sliderFrame, text='D', command=self.click_down)
+        self.button_up = Button(self.sliderFrame, text=u'\u2191', command=self.click_up)
+        self.button_down = Button(self.sliderFrame, text=u'\u2193', command=self.click_down)
         self.gui_template()
 
     def load_file(self, file_path):
@@ -53,6 +53,7 @@ class ProjectFrame(LabelFrame):
                 for member in step['members']:
                     stp.members.append(member)
                 prj.steps.append(stp)
+            prj.about = project['description']
             self.projects.append(prj)
 
     def save_frame(self, file_path=''):
@@ -94,9 +95,9 @@ class ProjectFrame(LabelFrame):
         label_projects = Label(self.header, text='Projects', bg='cyan', width=15, height=3)
         label_start = Label(self.header, text='From', bg='cyan', width=10, height=3)
         label_end = Label(self.header, text='To', bg='cyan', width=10, height=3)
-        label_duration = Label(self.header, text='Duration', bg='cyan', width=10, height=3)
+        label_duration = Label(self.header, text='Duration\n(days)', bg='cyan', width=10, height=3)
         label_members = Label(self.header, text='Member(s)', bg='cyan', width=10, height=3)
-        label_completion = Label(self.header, text='Completed', bg='cyan', width=10, height=3)
+        label_completion = Label(self.header, text='Completed\n(%)', bg='cyan', width=10, height=3)
 
         label_projects.grid(row=0, column=0, padx=1)
         label_start.grid(row=0, column=1, padx=1)
@@ -161,7 +162,7 @@ class ProjectFormWindow(Toplevel):
         self.entry_title = Entry(self)
         self.entry_name = Entry(self)
         self.entry_members = Entry(self)
-        self.entry_about = Entry(self)
+        self.entry_about = Text(self, width=30, height=5)
         self.button_start = None
         self.button_end = None
         self.calendar = None
@@ -174,7 +175,7 @@ class ProjectFormWindow(Toplevel):
         self.step.name = self.entry_name.get()
         if self.step.start is not None and self.step.end is not None:
             self.step.duration = (self.step.end - self.step.start).days
-        self.step.members = self.entry_members.get()
+        self.step.members.append(self.entry_members.get())
 
         if self.step.is_valid():
             self.project.steps.append(self.step)
@@ -182,7 +183,6 @@ class ProjectFormWindow(Toplevel):
 
         self.entry_name.delete(0, END)
         self.entry_members.delete(0, END)
-        self.entry_about.delete(0, END)
         self.entry_name.delete(0, END)
 
         self.button_start.configure(text='Choose a date')
@@ -192,7 +192,7 @@ class ProjectFormWindow(Toplevel):
         title = self.entry_title.get()
         if len(title) > 0:
             self.project.title = title
-            self.project.about = self.entry_about.get()
+            self.project.about = self.entry_about.get('1.0', END)
         self.project.update()
         if self.project.is_valid():
             self.app.projectFrame.projects.append(self.project)
@@ -274,7 +274,7 @@ class ProjectEditWindow(Toplevel):
         self.button_start = Button(self, command=lambda: self.click_datepicker('start'))
         self.button_end = Button(self, command=lambda: self.click_datepicker('end'))
         self.entry_members = Entry(self)
-        self.entry_about = Entry(self)
+        self.entry_about = Text(self, width=30, height=5)
 
         self.calendarWindow = None
         self.calendar = None
@@ -324,8 +324,8 @@ class ProjectEditWindow(Toplevel):
         project.steps[self.step_index].name = self.entry_name.get()
         project.steps[self.step_index].start = self.start_date
         project.steps[self.step_index].end = self.end_date
-        project.steps[self.step_index].members = self.entry_members.get()
-        project.about = self.entry_about.get()
+        project.steps[self.step_index].members[0] = (self.entry_members.get())
+        project.about = self.entry_about.get('1.0', END)
         self.app.projectFrame.projects[self.project_index] = project
 
     def click_add(self):
@@ -344,6 +344,7 @@ class ProjectEditWindow(Toplevel):
 
     def click_save(self):
         self.destroy()
+        self.app.update()
 
     def click_goto(self):
         ans = self.entry_index.get()
@@ -355,7 +356,7 @@ class ProjectEditWindow(Toplevel):
         self.entry_title.delete(0, END)
         self.entry_name.delete(0, END)
         self.entry_members.delete(0, END)
-        self.entry_about.delete(0, END)
+        self.entry_about.delete('1.0', END)
 
         label_title = Label(self, text='Title')
         label_steps = Label(self, text='Steps')
@@ -365,8 +366,8 @@ class ProjectEditWindow(Toplevel):
         label_members = Label(self, text='Members')
         label_about = Label(self, text='Description')
 
-        button_left = Button(self, text='<', command=self.click_left)
-        button_right = Button(self, text='>', command=self.click_right)
+        button_left = Button(self, text=u'\u2190', command=self.click_left)
+        button_right = Button(self, text=u'\u2192', command=self.click_right)
         button_edit = Button(self, text='Edit', command=self.click_edit)
         button_add = Button(self, text='Add', command=self.click_add)
         button_remove = Button(self, text='Remove', command=self.click_remove)
@@ -396,10 +397,11 @@ class ProjectEditWindow(Toplevel):
         button_replace.grid(row=2, column=3)
         button_save.grid(row=7, column=0, columnspan=4)
 
+        members = self.app.projectFrame.projects[self.project_index].steps[self.step_index].tell_members()
         self.entry_title.insert(0, self.app.projectFrame.projects[self.project_index].title)
         self.entry_name.insert(0, self.app.projectFrame.projects[self.project_index].steps[self.step_index].name)
-        self.entry_members.insert(0, self.app.projectFrame.projects[self.project_index].steps[self.step_index].members)
-        self.entry_about.insert(0, self.app.projectFrame.projects[self.project_index].about)
+        self.entry_members.insert(0, members)
+        self.entry_about.insert('1.0', self.app.projectFrame.projects[self.project_index].about)
 
         self.start_date = self.app.projectFrame.projects[self.project_index].steps[self.step_index].start
         self.end_date = self.app.projectFrame.projects[self.project_index].steps[self.step_index].end

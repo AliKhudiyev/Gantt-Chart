@@ -9,26 +9,15 @@ class MenuBar(Menu):
         self.master = master
         self.app = app
 
-    def click_new(self):
-        pass
+    def show_completion(self):
+        self.app.calendarFrame.show_completion = not self.app.calendarFrame.show_completion
+        self.app.update()
 
-    def click_open(self):
-        pass
-
-    def click_save(self):
-        pass
-
-    def click_save_as(self):
-        pass
-
-    def click_add(self):
-        pass
-
-    def click_edit(self):
-        pass
-
-    def click_remove(self):
-        pass
+    def display_dates(self):
+        if self.app.calendarFrame.display_dates:
+            self.app.calendarFrame.label_date.place_forget()
+        self.app.calendarFrame.display_dates = not self.app.calendarFrame.display_dates
+        self.app.update()
 
     def gui_new(self):
         app = self.app.new_app()
@@ -101,6 +90,10 @@ class MenuBar(Menu):
         self.add_cascade(label='Tools', menu=menu_tools)
 
         menu_settings = Menu(self)
+        menu_settings.add_command(label='Show completion', command=self.show_completion)
+        menu_settings.add_command(label='Show dependencies')
+        menu_settings.add_command(label='Display dates', command=self.display_dates)
+        menu_settings.add_separator()
         menu_settings.add_command(label='Preferences')
 
         self.add_cascade(label='Settings', menu=menu_settings)

@@ -63,7 +63,7 @@ class MenuBar(Menu):
 
     def gui_edit(self):
         print('Editing...')
-        form = ProjectFormWindow(self.master, self.app, 1)
+        form = ProjectEditWindow(self.master, self.app)
         form.run()
 
     def gui_remove(self):

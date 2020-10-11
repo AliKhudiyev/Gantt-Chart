@@ -3,6 +3,7 @@ from tkinter import ttk
 import datetime
 from tkcalendar import *
 import numpy as np
+import copy
 from project import *
 
 
@@ -21,7 +22,7 @@ class ProjectFrame(LabelFrame):
     def __init__(self, master, app, width, height):
         LabelFrame.__init__(self, master, width=width, height=height)
         self.app = app
-        self.mainFrame = LabelFrame(self, width=width-45, height=height)
+        self.mainFrame = LabelFrame(self, width=width - 45, height=height)
         self.sliderFrame = LabelFrame(self, width=45, height=height)
 
         self.header = LabelFrame(self.mainFrame)
@@ -170,15 +171,11 @@ class ProjectFormWindow(Toplevel):
     def click_add(self):
         self.step.name = self.entry_name.get()
         self.step.duration = (self.step.end - self.step.start).days
-        # print('Duration:', self.step.duration)
-        # print('Step interval:', self.step.start, '-', self.step.end)
         self.step.members = self.entry_members.get()
 
         if self.step.is_valid():
-            # print(' --- Appended step')
             self.project.steps.append(self.step)
             self.step = Step()
-            # print(' ...# of steps:', len(self.project.steps))
 
         self.entry_name.delete(0, END)
         self.entry_members.delete(0, END)
@@ -256,6 +253,161 @@ class ProjectFormWindow(Toplevel):
             label_edit.grid(row=6, column=0)
             entry_edit.grid(row=6, column=1)
             # TO DO
+
+
+class ProjectEditWindow(Toplevel):
+    def __init__(self, master, app):
+        Toplevel.__init__(self, master)
+        self.title('Edit project')
+        self.app = app
+
+        self.entry_index = Entry(self)
+
+        self.entry_title = Entry(self)
+        self.entry_name = Entry(self)
+        self.button_start = Button(self, command=lambda: self.click_datepicker('start'))
+        self.button_end = Button(self, command=lambda: self.click_datepicker('end'))
+        self.entry_members = Entry(self)
+        self.entry_about = Entry(self)
+
+        self.calendarWindow = None
+        self.calendar = None
+
+        self.start_date = None
+        self.end_date = None
+
+        self.project_index = 0
+        self.step_index = 0
+
+    def set_step_date(self, date_type):
+        picked_date = self.calendar.selection_get()
+        date = datetime.datetime(year=picked_date.year, month=picked_date.month, day=picked_date.day)
+
+        if date_type == 'start':
+            # self.app.projectFrame.projects[self.project_index].steps[self.step_index].start = date
+            self.start_date = date
+            self.button_start.configure(text=date.strftime('%d/%m/%Y'))
+        else:
+            # self.app.projectFrame.projects[self.project_index].steps[self.step_index].end = date
+            self.end_date = date
+            self.button_end.configure(text=date.strftime('%d/%m/%Y'))
+        self.calendarWindow.destroy()
+
+    def click_datepicker(self, date_type):
+        self.calendarWindow = Toplevel(self)
+        today = datetime.datetime.now()
+        self.calendar = Calendar(self.calendarWindow, font="Arial 14", selectmode='day', locale='en_US',
+                                 disabledforeground='red',
+                                 cursor="hand1", year=today.year, month=today.month, day=today.day)
+        self.calendar.pack(fill="both", expand=True)
+        ttk.Button(self.calendarWindow, text="Ok", command=lambda: self.set_step_date(date_type)).pack()
+
+    def click_left(self):
+        if self.step_index > 0:
+            self.step_index -= 1
+        self.click_goto()
+
+    def click_right(self):
+        if self.step_index + 1 < len(self.app.projectFrame.projects[self.project_index].steps):
+            self.step_index += 1
+        self.click_goto()
+
+    def click_edit(self):
+        project = self.app.projectFrame.projects[self.project_index]
+        project.title = self.entry_title.get()
+        project.steps[self.step_index].name = self.entry_name.get()
+        project.steps[self.step_index].start = self.start_date
+        project.steps[self.step_index].end = self.end_date
+        project.steps[self.step_index].members = self.entry_members.get()
+        project.about = self.entry_about.get()
+        self.app.projectFrame.projects[self.project_index] = project
+
+    def click_add(self):
+        step = Step()
+        self.app.projectFrame.projects[self.project_index].steps.insert(self.step_index + 1, step)
+
+    def click_remove(self):
+        step = self.app.projectFrame.projects[self.project_index].steps[self.step_index]
+        self.app.projectFrame.projects[self.project_index].steps.remove(step)
+
+    def click_replace(self):
+        size = len(self.app.projectFrame.projects[self.project_index].steps)
+        tmp = copy.deepcopy(self.app.projectFrame.projects[self.project_index].steps[self.step_index])
+        tmp2 = self.app.projectFrame.projects[self.project_index].steps[(self.step_index + 1) % size]
+        self.app.projectFrame.projects[self.project_index].steps[self.step_index] = tmp2
+        self.app.projectFrame.projects[self.project_index].steps[(self.step_index + 1) % size] = tmp
+
+    def click_save(self):
+        self.destroy()
+
+    def click_goto(self):
+        self.project_index = int(self.entry_index.get())
+        self.entry_title.delete(0, END)
+        self.entry_name.delete(0, END)
+        self.entry_members.delete(0, END)
+        print(self.project_index)
+
+        label_title = Label(self, text='Title')
+        label_steps = Label(self, text='Steps')
+        label_name = Label(self, text='Name')
+        label_start = Label(self, text='From')
+        label_end = Label(self, text='To')
+        label_members = Label(self, text='Members')
+        label_about = Label(self, text='Description')
+
+        button_left = Button(self, text='<', command=self.click_left)
+        button_right = Button(self, text='>', command=self.click_right)
+        button_edit = Button(self, text='Edit', command=self.click_edit)
+        button_add = Button(self, text='Add', command=self.click_add)
+        button_remove = Button(self, text='Remove', command=self.click_remove)
+        button_replace = Button(self, text='Replace', command=self.click_replace)
+        button_save = Button(self, text='Save', command=self.click_save)
+
+        label_title.grid(row=0, column=0)
+        label_steps.grid(row=1, column=1)
+        label_name.grid(row=3, column=0)
+        label_start.grid(row=4, column=0)
+        label_end.grid(row=4, column=2)
+        label_members.grid(row=5, column=0)
+        label_about.grid(row=6, column=0)
+
+        self.entry_title.grid(row=0, column=1)
+        self.entry_name.grid(row=3, column=1)
+        self.button_start.grid(row=4, column=1)
+        self.button_end.grid(row=4, column=3)
+        self.entry_members.grid(row=5, column=1)
+        self.entry_about.grid(row=6, column=1)
+
+        button_left.grid(row=1, column=0)
+        button_right.grid(row=1, column=2)
+        button_edit.grid(row=2, column=0)
+        button_add.grid(row=2, column=1)
+        button_remove.grid(row=2, column=2)
+        button_replace.grid(row=2, column=3)
+        button_save.grid(row=7, column=0, columnspan=4)
+
+        self.entry_title.insert(0, self.app.projectFrame.projects[self.project_index].title)
+        self.entry_name.insert(0, self.app.projectFrame.projects[self.project_index].steps[self.step_index].name)
+        self.entry_members.insert(0, self.app.projectFrame.projects[self.project_index].steps[self.step_index].members)
+        self.entry_about.insert(0, self.app.projectFrame.projects[self.project_index].about)
+
+        self.start_date = self.app.projectFrame.projects[self.project_index].steps[self.step_index].start
+        self.end_date = self.app.projectFrame.projects[self.project_index].steps[self.step_index].end
+
+        self.button_start.configure(text=self.start_date.strftime('%d.%m.%Y'))
+        self.button_end.configure(text=self.end_date.strftime('%d.%m.%Y'))
+
+    def gui_edit(self):
+        clear_frame(self)
+        self.click_goto()
+
+    def run(self):
+        label_index = Label(self, text='ID')
+        button_index = Button(self, text='Go to', command=self.gui_edit)
+
+        label_index.grid(row=0, column=0)
+        self.entry_index.grid(row=0, column=1)
+        button_index.grid(row=1, column=0, columnspan=2)
 
 
 class ProjectRemoveWindow(Toplevel):

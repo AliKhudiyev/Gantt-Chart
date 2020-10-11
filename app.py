@@ -9,6 +9,7 @@ class App:
     def __init__(self):
         self.root = Tk()
         self.root.title('Gantt Chart')
+        self.root.resizable(0, 0)
         self.menuBar = MenuBar(self.root, self)
         self.frame = LabelFrame(self.root)
         # self.frame1 = LabelFrame(self.frame)

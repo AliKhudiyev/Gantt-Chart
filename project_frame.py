@@ -119,7 +119,7 @@ class ProjectFrame(LabelFrame):
             if i < self.start_index:
                 continue
             # print('prj title:', project.title)
-            label_title = Label(self.body, text=project.title, bg='yellow', width=15)
+            label_title = Label(self.body, text=str(i) + '. ' + project.title, bg='yellow', width=15)
             label_title.grid(row=n_row, column=0, padx=1, pady=2)
 
             for step in project.steps:
@@ -130,12 +130,14 @@ class ProjectFrame(LabelFrame):
                 completed = 0
                 if step.duration > 0 and dt > 0:
                     completed = np.round(100 * dt / step.duration, decimals=0)
+                if completed > 100:
+                    completed = 100
 
                 label_name = Label(self.body, text=step.name, width=15)
                 label_start = Label(self.body, text=start, width=10)
                 label_end = Label(self.body, text=end, width=10)
                 label_duration = Label(self.body, text=step.duration, width=10)
-                label_members = Label(self.body, text='mems?', width=10)
+                label_members = Label(self.body, text=step.tell_members(), width=10)
                 label_completion = Label(self.body, text=str(completed), width=10)
 
                 label_name.grid(row=n_row + 1, column=0, padx=1, pady=2)
@@ -323,8 +325,7 @@ class ProjectEditWindow(Toplevel):
         self.app.projectFrame.projects[self.project_index] = project
 
     def click_add(self):
-        step = Step()
-        self.app.projectFrame.projects[self.project_index].steps.insert(self.step_index + 1, step)
+        self.app.projectFrame.projects[self.project_index].steps.insert(self.step_index + 1, Step())
 
     def click_remove(self):
         step = self.app.projectFrame.projects[self.project_index].steps[self.step_index]
@@ -345,6 +346,7 @@ class ProjectEditWindow(Toplevel):
         self.entry_title.delete(0, END)
         self.entry_name.delete(0, END)
         self.entry_members.delete(0, END)
+        self.entry_about.delete(0, END)
         print(self.project_index)
 
         label_title = Label(self, text='Title')
@@ -394,8 +396,12 @@ class ProjectEditWindow(Toplevel):
         self.start_date = self.app.projectFrame.projects[self.project_index].steps[self.step_index].start
         self.end_date = self.app.projectFrame.projects[self.project_index].steps[self.step_index].end
 
-        self.button_start.configure(text=self.start_date.strftime('%d.%m.%Y'))
-        self.button_end.configure(text=self.end_date.strftime('%d.%m.%Y'))
+        if self.start_date is not None and self.end_date is not None:
+            self.button_start.configure(text=self.start_date.strftime('%d.%m.%Y'))
+            self.button_end.configure(text=self.end_date.strftime('%d.%m.%Y'))
+        else:
+            self.button_start.configure(text='Choose a date')
+            self.button_end.configure(text='Choose a date')
 
     def gui_edit(self):
         clear_frame(self)

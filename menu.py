@@ -31,7 +31,8 @@ class MenuBar(Menu):
         pass
 
     def gui_new(self):
-        pass
+        app = self.app.new_app()
+        app.run()
 
     def gui_open(self):
         file_type = [('Gantt Chart', '*.json')]
@@ -39,13 +40,16 @@ class MenuBar(Menu):
                                                initialdir=os.getcwd(),
                                                title="Please select a file:",
                                                filetypes=file_type)
-        print('Open', file_path)
+        # print('Open', file_path)
         self.app.projectFrame.projects = []
         self.app.projectFrame.load_file(file_path)
         self.app.update()
 
     def gui_save(self):
-        print(to_json(self.app.projectFrame.projects))
+        # print(to_json(self.app.projectFrame.projects))
+        file_path = self.app.projectFrame.file_path
+        if len(file_path) > 0:
+            self.app.projectFrame.save_frame(file_path)
 
     def gui_save_as(self):
         file_type = [('Gantt Chart', '*.json')]
@@ -53,21 +57,21 @@ class MenuBar(Menu):
                                                  initialdir=os.getcwd(),
                                                  title="Please select a file name for saving:",
                                                  filetypes=file_type)
-        print('Save as', file_path)
+        # print('Save as', file_path)
         self.app.projectFrame.save_frame(file_path)
 
     def gui_add(self):
-        print('Adding...')
+        # print('Adding...')
         form = ProjectFormWindow(self.master, self.app)
         form.run()
 
     def gui_edit(self):
-        print('Editing...')
+        # print('Editing...')
         form = ProjectEditWindow(self.master, self.app)
         form.run()
 
     def gui_remove(self):
-        print('Removing...')
+        # print('Removing...')
         form = ProjectRemoveWindow(self.master, self.app)
         form.run()
 

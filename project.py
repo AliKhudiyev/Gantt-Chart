@@ -10,7 +10,8 @@ class Step:
         self.members = []
 
     def is_valid(self):
-        if len(self.name) == 0 or self.start is None or self.end is None:
+        if len(self.name) == 0 or self.start is None or self.end is None or \
+                self.duration < 0 or len(self.members) == 0:
             return False
         return True
 
@@ -48,6 +49,13 @@ class Project:
         self.update()
 
     def is_valid(self):
+        for step in self.steps:
+            if not step.is_valid():
+                return False
+
+        if len(self.title) == 0 or len(self.steps) == 0:
+            return False
+
         return True
 
     def update(self):

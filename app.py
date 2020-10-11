@@ -46,6 +46,10 @@ class App:
         self.projectFrame.projects = self.projects
         # ================
 
+    @staticmethod
+    def new_app(self):
+        return App()
+
     def update(self):
         self.projectFrame.update()
         self.calendarFrame.update(4, self.projectFrame.projects[self.projectFrame.start_index:])

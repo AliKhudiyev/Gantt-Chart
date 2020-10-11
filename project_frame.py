@@ -172,7 +172,8 @@ class ProjectFormWindow(Toplevel):
 
     def click_add(self):
         self.step.name = self.entry_name.get()
-        self.step.duration = (self.step.end - self.step.start).days
+        if self.step.start is not None and self.step.end is not None:
+            self.step.duration = (self.step.end - self.step.start).days
         self.step.members = self.entry_members.get()
 
         if self.step.is_valid():
@@ -184,14 +185,17 @@ class ProjectFormWindow(Toplevel):
         self.entry_about.delete(0, END)
         self.entry_name.delete(0, END)
 
+        self.button_start.configure(text='Choose a date')
+        self.button_end.configure(text='Choose a date')
+
     def click_save(self):
         title = self.entry_title.get()
         if len(title) > 0:
             self.project.title = title
             self.project.about = self.entry_about.get()
         self.project.update()
-        self.app.projectFrame.projects.append(self.project)
-        print('Date interval:', self.project.start, self.project.end)
+        if self.project.is_valid():
+            self.app.projectFrame.projects.append(self.project)
         self.destroy()
         self.app.update()
 
@@ -342,12 +346,16 @@ class ProjectEditWindow(Toplevel):
         self.destroy()
 
     def click_goto(self):
-        self.project_index = int(self.entry_index.get())
+        ans = self.entry_index.get()
+        if not ans.isnumeric():
+            self.destroy()
+            return 0
+
+        self.project_index = int(ans)
         self.entry_title.delete(0, END)
         self.entry_name.delete(0, END)
         self.entry_members.delete(0, END)
         self.entry_about.delete(0, END)
-        print(self.project_index)
 
         label_title = Label(self, text='Title')
         label_steps = Label(self, text='Steps')
@@ -425,10 +433,12 @@ class ProjectRemoveWindow(Toplevel):
         self.entry_index = Entry(self)
 
     def click_remove(self):
-        index = int(self.entry_index.get())
-        if 0 <= index < len(self.app.projectFrame.projects):
-            self.app.projectFrame.projects.remove(self.app.projectFrame.projects[index])
-        self.app.update()
+        ans = self.entry_index.get()
+        if ans.isnumeric():
+            index = int(ans)
+            if 0 <= index < len(self.app.projectFrame.projects):
+                self.app.projectFrame.projects.remove(self.app.projectFrame.projects[index])
+            self.app.update()
         self.destroy()
 
     def run(self):

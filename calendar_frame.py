@@ -48,6 +48,9 @@ class CalendarFrame(LabelFrame):
         dt = (date - self.calendar_start).days
         n = 0
 
+        if dt < 0:
+            return -1
+
         while n < dt:
             n += 1
             if (n + 1) % 8 == 0:
@@ -69,12 +72,14 @@ class CalendarFrame(LabelFrame):
         x_offset = self.x_offset
         offset = (date-self.calendar_start).days
         x_pad = ((offset+1) // 8) * self.week_pad_pixels
-        for i in range(span):
-            if offset+i > 27 or row_index > 17:
-                # print('break offset:', offset+i)
+        begin = 0
+        if offset < 0:
+            x_pad = 0
+            begin = -offset
+        for i in range(begin, span):
+            if offset+i > 27+3 or row_index > 17:
                 break
-            # print('+')
-            if (date+datetime.timedelta(i)).weekday() == 0:
+            if i > begin and (date+datetime.timedelta(i)).weekday() == 0:
                 x_pad += self.week_pad_pixels
             self.body.create_rectangle(w*(offset+i)+x_offset+x_pad, h*row_index,
                                        w*(offset+i+1)+x_offset+x_pad, h*(row_index+1),
@@ -83,8 +88,9 @@ class CalendarFrame(LabelFrame):
     def display_date(self):
         now = datetime.datetime.now()
         n = self.date_index(now)
-        label = Label(self.header, text=self.weekdays[now.weekday()], bg='red')
-        label.grid(row=0, column=n)
+        if 0 <= n <= 27+3:
+            label = Label(self.header, text=self.weekdays[now.weekday()], bg='red')
+            label.grid(row=0, column=n)
 
     def update_calendar_start(self, projects):
         now = datetime.datetime.now()
@@ -95,7 +101,7 @@ class CalendarFrame(LabelFrame):
             if self.calendar_start > project.start:
                 self.calendar_start = project.start
         self.calendar_start -= datetime.timedelta(self.calendar_start.weekday())
-        print('Calendar starts in', self.calendar_start)
+        # print('Calendar starts in', self.calendar_start)
 
     def gui_template(self, n_week=4):
         for i in range(n_week):

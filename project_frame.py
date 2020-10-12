@@ -18,6 +18,17 @@ def clear_frame(window):
             item.grid_forget()
 
 
+def reset_frame(window):
+    if window is not None:
+        widget_list = window.winfo_children()
+
+        for item in widget_list:
+            if item.winfo_children():
+                widget_list.extend(item.winfo_children())
+        for item in widget_list:
+            item.grid_remove()
+
+
 class ProjectFrame(LabelFrame):
     def __init__(self, master, app, width, height):
         LabelFrame.__init__(self, master, width=width, height=height)
@@ -26,18 +37,24 @@ class ProjectFrame(LabelFrame):
         self.sliderFrame = LabelFrame(self, width=45, height=height)
 
         self.header = LabelFrame(self.mainFrame)
-        self.body = LabelFrame(self.mainFrame)
+        self.body = LabelFrame(self.mainFrame, width=width - 45, height=height - 65)
 
         self.projects = []
         self.file_path = ''
         self.start_index = 0
+        self.time_format = '%d/%m/%Y'
 
         self.button_up = Button(self.sliderFrame, text=u'\u2191', command=self.click_up)
         self.button_down = Button(self.sliderFrame, text=u'\u2193', command=self.click_down)
         self.gui_template()
 
     def load_file(self, file_path):
+        if len(file_path) == 0:
+            return 1
+
+        self.projects = list()
         self.file_path = file_path
+
         with open(file_path, 'r') as f:
             json_str = json.load(f)
         f.close()
@@ -48,12 +65,14 @@ class ProjectFrame(LabelFrame):
             for step in project['steps']:
                 stp = Step()
                 stp.name = step['name']
-                stp.start = datetime.datetime.strptime(step['start'], '%d/%m/%Y')
-                stp.end = datetime.datetime.strptime(step['end'], '%d/%m/%Y')
+                stp.start = datetime.datetime.strptime(step['start'], self.time_format)
+                stp.end = datetime.datetime.strptime(step['end'], self.time_format)
                 for member in step['members']:
                     stp.members.append(member)
                 prj.steps.append(stp)
-            prj.about = project['description']
+            # print('loaded:', project['description'])
+            # print('stringtitized:', str(project['description']))
+            prj.about = str(project['description'])
             self.projects.append(prj)
 
     def save_frame(self, file_path=''):
@@ -91,6 +110,7 @@ class ProjectFrame(LabelFrame):
         self.grid_propagate(0)
         self.mainFrame.grid_propagate(0)
         self.sliderFrame.grid_propagate(0)
+        self.body.grid_propagate(0)
 
         label_projects = Label(self.header, text='Projects', bg='cyan', width=15, height=3)
         label_start = Label(self.header, text='From', bg='cyan', width=10, height=3)
@@ -119,18 +139,40 @@ class ProjectFrame(LabelFrame):
         for i, project in enumerate(self.projects):
             if i < self.start_index:
                 continue
-            # print('prj title:', project.title)
+            if n_row > 17:
+                break
+
+            project.update()
+            duration = (project.end - project.start).days
+            dt = (datetime.datetime.now() - project.start).days
+            completed = 0
+            if dt > 0:
+                completed = int(np.round(100 * dt / duration, decimals=0))
+            if completed > 100:
+                completed = 100
+
             label_title = Label(self.body, text=str(i) + '. ' + project.title, bg='yellow', width=15)
+            label_start = Label(self.body, text=project.start.strftime(self.time_format), bg='yellow', width=10)
+            label_end = Label(self.body, text=project.end.strftime(self.time_format), bg='yellow', width=10)
+            label_duration = Label(self.body, text=str(duration), bg='yellow', width=10)
+            label_members = Label(self.body, bg='yellow', width=10)
+            label_completion = Label(self.body, text=str(completed), bg='yellow', width=10)
+
             label_title.grid(row=n_row, column=0, padx=1, pady=2)
+            label_start.grid(row=n_row, column=1, padx=1, pady=2)
+            label_end.grid(row=n_row, column=2, padx=1, pady=2)
+            label_duration.grid(row=n_row, column=3, padx=1, pady=2)
+            label_members.grid(row=n_row, column=4, padx=1, pady=2)
+            label_completion.grid(row=n_row, column=5, padx=1, pady=2)
 
             for step in project.steps:
-                start = step.start.strftime('%d/%m/%Y')
-                end = step.end.strftime('%d/%m/%Y')
+                start = step.start.strftime(self.time_format)
+                end = step.end.strftime(self.time_format)
                 step.duration = (step.end - step.start).days
                 dt = (datetime.datetime.now() - step.start).days
                 completed = 0
                 if step.duration > 0 and dt > 0:
-                    completed = np.round(100 * dt / step.duration, decimals=0)
+                    completed = int(np.round(100 * dt / step.duration, decimals=0))
                 if completed > 100:
                     completed = 100
 
@@ -324,7 +366,8 @@ class ProjectEditWindow(Toplevel):
         project.steps[self.step_index].name = self.entry_name.get()
         project.steps[self.step_index].start = self.start_date
         project.steps[self.step_index].end = self.end_date
-        project.steps[self.step_index].members[0] = (self.entry_members.get())
+        project.steps[self.step_index].members = list()  # Re-write this!
+        project.steps[self.step_index].members.append(self.entry_members.get())  # ...
         project.about = self.entry_about.get('1.0', END)
         self.app.projectFrame.projects[self.project_index] = project
 
@@ -348,7 +391,7 @@ class ProjectEditWindow(Toplevel):
 
     def click_goto(self):
         ans = self.entry_index.get()
-        if not ans.isnumeric():
+        if not ans.isnumeric() or int(ans) >= len(self.app.projectFrame.projects):
             self.destroy()
             return 0
 
@@ -401,7 +444,9 @@ class ProjectEditWindow(Toplevel):
         self.entry_title.insert(0, self.app.projectFrame.projects[self.project_index].title)
         self.entry_name.insert(0, self.app.projectFrame.projects[self.project_index].steps[self.step_index].name)
         self.entry_members.insert(0, members)
-        self.entry_about.insert('1.0', self.app.projectFrame.projects[self.project_index].about)
+        for i, line in enumerate(self.app.projectFrame.projects[self.project_index].about.split('\n')):
+            self.entry_about.insert(END, line + '\n')
+        # self.entry_about.insert('1.0', self.app.projectFrame.projects[self.project_index].about)
 
         self.start_date = self.app.projectFrame.projects[self.project_index].steps[self.step_index].start
         self.end_date = self.app.projectFrame.projects[self.project_index].steps[self.step_index].end

@@ -46,9 +46,8 @@ class App:
         self.projectFrame.projects = self.projects
         # ================
 
-    @staticmethod
-    def new_app(self):
-        return App()
+    def reset(self):
+        self.projectFrame.projects = list()
 
     def update(self):
         self.projectFrame.update()

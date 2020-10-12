@@ -7,11 +7,11 @@ class Step:
         self.start = None
         self.end = None
         self.duration = 0
-        self.members = ['']
+        self.members = []
 
     def is_valid(self):
         if len(self.name) == 0 or self.start is None or self.end is None or \
-                self.duration < 0 or len(self.members) == 0:
+                self.duration < 0 or len(self.members) < 0:
             return False
         return True
 
@@ -77,7 +77,9 @@ class Project:
             json_str += step.to_json()
             if i < len(self.steps) - 1:
                 json_str += ', '
-        json_str += '], "description": "' + self.about + '"]}'
+        json_str += '], "description": ' + json.dumps(self.about) + '}'
+        # print('prepared:', json.dumps(self.about))
+        # print('saved:', json.loads(json.dumps(self.about)))
 
         return json_str
 

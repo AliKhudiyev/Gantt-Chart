@@ -83,19 +83,35 @@ class ProjectFrame(LabelFrame):
             json.dump(to_json(self.projects), f)
         f.close()
 
+    def expand_project(self, index):
+        win = Toplevel(self)
+        win.title('Project description')
+        win.minsize(100, 100)
+        project = self.projects[index]
+        steps = ''
+
+        for i, step in enumerate(project.steps):
+            steps += str(i+1) + '. ' + step.name + '\n'
+
+        label_title = Label(win, text=project.title, bg='purple')
+        label_about = Label(win, text=project.about, bg='yellow')
+        label_steps = Label(win, text=steps[:-1], bg='orange')
+        label_members = Label(win, text=project.tell_members(), bg='cyan')
+
+        label_title.pack()
+        label_about.pack()
+        label_steps.pack()
+        label_members.pack()
+
     def click_up(self):
         if self.start_index > 0:
             self.start_index -= 1
         self.app.update()
-        # self.app.projectFrame.update()
-        # self.app.calendarFrame.update(4, self.projects[self.start_index:])
 
     def click_down(self):
         if self.start_index + 1 < len(self.projects):
             self.start_index += 1
         self.app.update()
-        # self.app.projectFrame.update()
-        # self.app.calendarFrame.update(4, self.projects[self.start_index:])
 
     def gui_template(self):
         self.mainFrame.grid(row=0, column=1)
@@ -155,7 +171,7 @@ class ProjectFrame(LabelFrame):
             label_start = Label(self.body, text=project.start.strftime(self.time_format), bg='yellow', width=10)
             label_end = Label(self.body, text=project.end.strftime(self.time_format), bg='yellow', width=10)
             label_duration = Label(self.body, text=str(duration), bg='yellow', width=10)
-            label_members = Label(self.body, bg='yellow', width=10)
+            label_members = Label(self.body, text=project.tell_members(), bg='yellow', width=10)
             label_completion = Label(self.body, text=str(completed), bg='yellow', width=10)
 
             label_title.grid(row=n_row, column=0, padx=1, pady=2)
@@ -164,6 +180,12 @@ class ProjectFrame(LabelFrame):
             label_duration.grid(row=n_row, column=3, padx=1, pady=2)
             label_members.grid(row=n_row, column=4, padx=1, pady=2)
             label_completion.grid(row=n_row, column=5, padx=1, pady=2)
+
+            label_title.bind('<Button-1>', lambda e, index=i: self.expand_project(index))
+            label_title.bind('<Enter>',
+                             lambda e, label=label_title: label.config(bg='purple'))
+            label_title.bind('<Leave>',
+                             lambda e, label=label_title: label.config(bg='yellow'))
 
             for step in project.steps:
                 start = step.start.strftime(self.time_format)

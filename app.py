@@ -43,7 +43,7 @@ class App:
         self.projects.append(prj1)
         self.projects.append(prj2)
 
-        self.projectFrame.projects = self.projects
+        # self.projectFrame.projects = self.projects
         # ================
 
     def reset(self):

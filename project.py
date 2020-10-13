@@ -44,6 +44,7 @@ class Project:
         self.steps = steps
         self.start = None
         self.end = None
+        self.members = []
         self.about = ''
 
         self.update()
@@ -58,6 +59,17 @@ class Project:
 
         return True
 
+    def tell_members(self):
+        members = ''
+
+        self.update()
+        for member in self.members:
+            members += member + ', '
+
+        if len(members) < 1:
+            return ''
+        return members[:-2]
+
     def update(self):
         if len(self.steps) > 0:
             self.start = self.steps[0].start
@@ -68,6 +80,11 @@ class Project:
                 self.start = step.start
             if self.end < step.end:
                 self.end = step.end
+
+            all_members = step.tell_members().split(',')
+            for member in all_members:
+                if member not in self.members:
+                    self.members.append(member)
 
     def to_json(self):
         json_str = '{'
